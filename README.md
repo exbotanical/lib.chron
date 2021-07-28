@@ -1,5 +1,7 @@
 # lib.chron
 
+Schedulers, timers, and clock-based eventing for the C programming language
+
 ## Dynamic Linking
 
 Linking to `lib.chron`:
