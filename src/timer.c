@@ -45,6 +45,13 @@ unsigned long __timespec_to_ms(struct timespec* time) {
 void __callback_wrapper(union sigval arg) {
 	chron_timer_t* timer = (chron_timer_t*)(arg.sival_ptr);
 
+	// if the state is TIMER_RESUMED, the timer was *just* resumed, so
+	// we can set the state to TIMER_RUNNING...
+	// provided the timer still has running time (otherwise, we would be stuck in a loop)
+	if (chron_timer_get_state(timer) == TIMER_RESUMED && timer->exp_time != 0) {
+		chron_timer_set_state(timer, TIMER_RUNNING);
+	}
+
 	(timer->callback)(timer, timer->callback_arg);
 }
 
@@ -128,4 +135,61 @@ bool chron_timer_toggle(chron_timer_t* timer) {
 void chron_timer_start(chron_timer_t* timer) {
 	chron_timer_toggle(timer);
 	chron_timer_set_state(timer, TIMER_RUNNING);
+}
+
+/**
+ * @brief Get the remaining time of the given chron_timer in ms
+ *
+ * @param timer
+ * @return unsigned long
+ */
+unsigned long chron_timer_get_ms_remaining(chron_timer_t* timer) {
+	struct itimerspec time_remaining;
+
+	memset(&time_remaining, 0, sizeof(struct itimerspec));
+
+	timer_gettime(timer->timer, &time_remaining);
+
+	return __timespec_to_ms(&time_remaining.it_value);
+}
+
+/**
+ * @brief Pause a running timer
+ *
+ * @param timer
+ * @return bool true only if pause succeeded
+ */
+bool chron_timer_pause(chron_timer_t* timer) {
+	if (chron_timer_get_state(timer) == TIMER_PAUSED) return false;
+
+	timer->time_remaining = chron_timer_get_ms_remaining(timer);
+
+	__set_itimerspec(&timer->ts.it_value, 0);
+	__set_itimerspec(&timer->ts.it_interval, 0);
+
+	if (!chron_timer_toggle(timer)) return false;
+
+	chron_timer_set_state(timer, TIMER_PAUSED);
+
+	return true;
+}
+
+/**
+ * @brief Resume a paused timer
+ *
+ * @param timer
+ * @return bool true only if resume succeeded
+ */
+bool chron_timer_resume(chron_timer_t* timer) {
+	if (chron_timer_get_state(timer) == TIMER_RESUMED) return false;
+
+	__set_itimerspec(&timer->ts.it_value, timer->time_remaining);
+	__set_itimerspec(&timer->ts.it_interval, timer->exp_interval);
+	timer->time_remaining = 0;
+
+	if (!chron_timer_toggle(timer)) return false;
+
+	chron_timer_set_state(timer, TIMER_RESUMED);
+
+	return true;
 }

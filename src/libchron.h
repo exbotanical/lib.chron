@@ -66,6 +66,12 @@ bool chron_timer_toggle(chron_timer_t* timer);
 
 void chron_timer_start(chron_timer_t* timer);
 
+unsigned long chron_timer_get_ms_remaining(chron_timer_t* timer);
+
+bool chron_timer_pause(chron_timer_t* timer);
+
+bool chron_timer_resume(chron_timer_t* timer);
+
 /**
  * @brief Set the chron_timer state flag
  *
