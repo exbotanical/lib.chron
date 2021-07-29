@@ -87,12 +87,33 @@ void __callback_wrapper(union sigval arg) {
 	// if the state is TIMER_RESUMED, the timer was *just* resumed, so
 	// we can set the state to TIMER_RUNNING...
 	// provided the timer still has running time (otherwise, we would be stuck in a loop)
-	if (__timer_getstate(timer) == TIMER_RESUMED && timer->exp_time != 0) {
-		__timer_setstate(timer, TIMER_RUNNING);
+	// if (__timer_getstate(timer) == TIMER_RESUMED && timer->exp_time != 0) {
+	// 	__timer_setstate(timer, TIMER_RUNNING);
+	// }
+
+	timer->invocation_count++;
+
+	if (timer->threshold && timer->invocation_count > timer->threshold) {
+		chron_timer_cancel(timer);
+		return;
 	}
 
 	(timer->callback)(timer, timer->callback_arg);
+
+	if (timer->is_exponential && timer->exponential_backoff_time) {
+		chron_timer_reschedule(timer, timer->exponential_backoff_time *= 2, 0);
+	} else if (timer->timer_state == TIMER_RESUMED) {
+		chron_timer_reschedule(timer, timer->exp_time, timer->exp_interval);
+	}
 }
+
+
+/*****************************
+ *
+ * 				Public API
+ *
+ ****************************/
+
 
 /**
  * @brief Initialize a new chron_timer
@@ -192,7 +213,7 @@ unsigned long chron_timer_get_ms_remaining(chron_timer_t* timer) {
 			break;
 		case TIMER_DELETED:
 		case TIMER_CANCELLED:
-			return ~0;
+			return -1;
 		default:
 			break;
 	}
@@ -294,8 +315,6 @@ bool chron_timer_restart(chron_timer_t* timer) {
  * @return bool
  */
 bool chron_timer_cancel(chron_timer_t* timer) {
-	chron_timer_state state = __timer_getstate(timer);
-
 	if (__timer_has_state(timer, 2, TIMER_INIT, TIMER_DELETED)) {
 		return false;
 	}
@@ -374,12 +393,28 @@ bool chron_timer_delete(chron_timer_t* timer) {
 	return true;
 }
 
+const char* getEnumStr(chron_timer_state state) {
+
+}
+
 /**
  * @brief Print timer details to stdout
  *
  * @param timer
  */
 void chron_timer_print(chron_timer_t* timer) {
+	char* readable_state;
+
+	switch (__timer_getstate(timer))
+	{
+	case TIMER_INIT:
+		readable_state = 'TIMER_INIT';
+		break;
+
+	default:
+		break;
+	}
+
 	printf(
 		"counter = %u | time remaining = %lu | state = %d\n",
 		timer->invocation_count,

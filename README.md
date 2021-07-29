@@ -2,6 +2,17 @@
 
 Schedulers, timers, and clock-based eventing for the C programming language
 
+## Library Features
+
+- Simple, fully programmable interfaces for
+  - single-use aka 'one shot' timers
+  - periodic timers
+  - exponential timers
+- rescheduling
+- cancellation
+- consistent exception-handling
+- Hierarchical Wheel Timers
+
 ## Dynamic Linking
 
 Linking to `lib.chron`:
