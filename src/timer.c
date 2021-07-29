@@ -1,8 +1,23 @@
 #include "libchron.h"
 
-#include <stdlib.h>
 #include <memory.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * @brief Set the chron_timer state flag
+ *
+ * @param timer
+ * @param state
+ */
+void __timer_setstate(chron_timer_t* timer, chron_timer_state state) {
+	timer->timer_state = state;
+}
+
+chron_timer_state __timer_getstate(chron_timer_t* timer) {
+	return timer->timer_state;
+}
 
 /**
  * @brief Opaque helper. Set the itimerspec ms and ns
@@ -29,8 +44,7 @@ void __set_itimerspec(struct timespec* ts, unsigned long ms) {
  *
  * @param nargs
  * @param ...
- * @return true
- * @return false
+ * @return bool
  */
 bool __timer_has_state(chron_timer_t* timer, int nargs,...) {
 	va_list args;
@@ -39,7 +53,7 @@ bool __timer_has_state(chron_timer_t* timer, int nargs,...) {
 
 	for (int i = 0; i < nargs; i++) {
 		chron_timer_state state = va_arg(args, chron_timer_state);
-		if (chron_timer_get_state(timer) == state) return true;
+		if (__timer_getstate(timer) == state) return true;
 	}
 
 	va_end(args);
@@ -73,8 +87,8 @@ void __callback_wrapper(union sigval arg) {
 	// if the state is TIMER_RESUMED, the timer was *just* resumed, so
 	// we can set the state to TIMER_RUNNING...
 	// provided the timer still has running time (otherwise, we would be stuck in a loop)
-	if (chron_timer_get_state(timer) == TIMER_RESUMED && timer->exp_time != 0) {
-		chron_timer_set_state(timer, TIMER_RUNNING);
+	if (__timer_getstate(timer) == TIMER_RESUMED && timer->exp_time != 0) {
+		__timer_setstate(timer, TIMER_RUNNING);
 	}
 
 	(timer->callback)(timer, timer->callback_arg);
@@ -110,7 +124,7 @@ chron_timer_t* chron_timer_init(
 	timer->is_exponential = is_exponential;
 	timer->threshold = max_expirations;
 
-	chron_timer_set_state(timer, TIMER_INIT);
+	__timer_setstate(timer, TIMER_INIT);
 
 	struct sigevent evp;
 	memset(&evp, 0, sizeof(struct sigevent));
@@ -159,7 +173,7 @@ bool chron_timer_toggle(chron_timer_t* timer) {
  */
 void chron_timer_start(chron_timer_t* timer) {
 	chron_timer_toggle(timer);
-	chron_timer_set_state(timer, TIMER_RUNNING);
+	__timer_setstate(timer, TIMER_RUNNING);
 }
 
 /**
@@ -170,6 +184,18 @@ void chron_timer_start(chron_timer_t* timer) {
  */
 unsigned long chron_timer_get_ms_remaining(chron_timer_t* timer) {
 	struct itimerspec time_remaining;
+
+	switch (timer->timer_state){
+		case TIMER_INIT:
+		case TIMER_PAUSED:
+		case TIMER_RUNNING:
+			break;
+		case TIMER_DELETED:
+		case TIMER_CANCELLED:
+			return ~0;
+		default:
+			break;
+	}
 
 	memset(&time_remaining, 0, sizeof(struct itimerspec));
 
@@ -199,7 +225,7 @@ bool chron_timer_pause(chron_timer_t* timer) {
 
 	if (!chron_timer_toggle(timer)) return false;
 
-	chron_timer_set_state(timer, TIMER_PAUSED);
+	__timer_setstate(timer, TIMER_PAUSED);
 
 	return true;
 }
@@ -224,7 +250,7 @@ bool chron_timer_resume(chron_timer_t* timer) {
 
 	if (!chron_timer_toggle(timer)) return false;
 
-	chron_timer_set_state(timer, TIMER_RESUMED);
+	__timer_setstate(timer, TIMER_RESUMED);
 
 	return true;
 }
@@ -256,7 +282,7 @@ bool chron_timer_restart(chron_timer_t* timer) {
 	timer->time_remaining = 0;
 	timer->exponential_backoff_time = timer->exp_time;
 	if (!chron_timer_toggle(timer)) return false;
-	chron_timer_set_state(timer, TIMER_RUNNING);
+	__timer_setstate(timer, TIMER_RUNNING);
 
 	return true;
 }
@@ -268,7 +294,7 @@ bool chron_timer_restart(chron_timer_t* timer) {
  * @return bool
  */
 bool chron_timer_cancel(chron_timer_t* timer) {
-	chron_timer_state state = chron_timer_get_state(timer);
+	chron_timer_state state = __timer_getstate(timer);
 
 	if (__timer_has_state(timer, 2, TIMER_INIT, TIMER_DELETED)) {
 		return false;
@@ -282,7 +308,82 @@ bool chron_timer_cancel(chron_timer_t* timer) {
 
 	if (!chron_timer_toggle(timer)) return false;
 
-	chron_timer_set_state(timer, TIMER_CANCELLED);
+	__timer_setstate(timer, TIMER_CANCELLED);
 
 	return true;
+}
+
+/**
+ * @brief Reschedule the chron_timer
+ *
+ * @param timer
+ * @param exp_time
+ * @param exp_interval
+ * @return bool
+ */
+bool chron_timer_reschedule(
+	chron_timer_t* timer,
+	unsigned long exp_time,
+	unsigned long exp_interval
+) {
+	uint32_t invocation_counter;
+	chron_timer_state state = __timer_getstate(timer);
+
+	if (state == TIMER_DELETED) return false;
+
+	invocation_counter = timer->invocation_count;
+
+	if (state != TIMER_CANCELLED) {
+		if (!chron_timer_cancel(timer)) return false;
+	}
+
+	timer->invocation_count = invocation_counter;
+
+	__set_itimerspec(&timer->ts.it_value, exp_time);
+
+	if (!timer->is_exponential) {
+		__set_itimerspec(&timer->ts.it_interval, exp_interval);
+	} else {
+		__set_itimerspec(&timer->ts.it_interval, 0);
+		timer->exponential_backoff_time = exp_time;
+	}
+
+	timer->time_remaining = 0;
+	if (!chron_timer_toggle(timer)) return false;
+
+	__timer_setstate(timer, TIMER_RUNNING);
+
+	return true;
+}
+
+/**
+ * @brief Delete the timer
+ * The caller must free `callback_arg`
+ *
+ * @param timer
+ * @return bool
+ */
+bool chron_timer_delete(chron_timer_t* timer) {
+	if (timer_delete(timer->timer) < 0) {
+		return false;
+	}
+
+	timer->callback_arg = NULL;
+	__timer_setstate(timer, TIMER_DELETED);
+
+	return true;
+}
+
+/**
+ * @brief Print timer details to stdout
+ *
+ * @param timer
+ */
+void chron_timer_print(chron_timer_t* timer) {
+	printf(
+		"counter = %u | time remaining = %lu | state = %d\n",
+		timer->invocation_count,
+		chron_timer_get_ms_remaining(timer),
+		__timer_getstate(timer)
+	);
 }

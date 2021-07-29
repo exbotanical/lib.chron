@@ -43,23 +43,23 @@ int main(int argc, char* argv[]) {
 				chron_timer_restart(timer);
 				break;
 			case 4:
-				// chron_timer_reschedule(
-				// 	timer,
-				// 	timer->exp_time,
-				// 	timer->exp_interval
-				// );
+				chron_timer_reschedule(
+					timer,
+					timer->exp_time,
+					timer->exp_interval
+				);
 				break;
 			case 5:
-				// chron_timer_delete(timer);
+				chron_timer_delete(timer);
 				break;
 			case 6:
 				chron_timer_cancel(timer);
 				break;
 			case 7:
-				// printf("Time remaining = %lu\n", chron_timer_get_ms_remaining(timer));
+				printf("Time remaining = %lu\n", chron_timer_get_ms_remaining(timer));
 				break;
 			case 8:
-				// chron_timer_print(timer);
+				chron_timer_print(timer);
 				break;
 			default: continue;
 		}

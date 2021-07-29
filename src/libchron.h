@@ -76,18 +76,14 @@ bool chron_timer_restart(chron_timer_t* timer);
 
 bool chron_timer_cancel(chron_timer_t* timer);
 
-/**
- * @brief Set the chron_timer state flag
- *
- * @param timer
- * @param state
- */
-static inline void chron_timer_set_state(chron_timer_t* timer, chron_timer_state state) {
-	timer->timer_state = state;
-}
+void chron_timer_print(chron_timer_t* timer);
 
-static inline chron_timer_state chron_timer_get_state(chron_timer_t* timer) {
-	return timer->timer_state;
-}
+bool chron_timer_reschedule(
+	chron_timer_t* timer,
+	unsigned long exp_time,
+	unsigned long exp_interval
+);
+
+bool chron_timer_delete(chron_timer_t* timer);
 
 #endif /* LIB_CHRON_H */
