@@ -34,13 +34,13 @@ int main(int argc, char* argv[]) {
 
 		switch (selection) {
 			case 1:
-				// chron_timer_pause(timer);
+				chron_timer_pause(timer);
 				break;
 			case 2:
-				// chron_timer_resume(timer);
+				chron_timer_resume(timer);
 				break;
 			case 3:
-				// chron_timer_restart(timer);
+				chron_timer_restart(timer);
 				break;
 			case 4:
 				// chron_timer_reschedule(
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 				// chron_timer_delete(timer);
 				break;
 			case 6:
-				// chron_timer_cancel(timer);
+				chron_timer_cancel(timer);
 				break;
 			case 7:
 				// printf("Time remaining = %lu\n", chron_timer_get_ms_remaining(timer));
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 			default: continue;
 		}
 
-		pause();
+		// pause();
 	}
 	return EXIT_SUCCESS;
 }

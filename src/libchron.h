@@ -72,6 +72,10 @@ bool chron_timer_pause(chron_timer_t* timer);
 
 bool chron_timer_resume(chron_timer_t* timer);
 
+bool chron_timer_restart(chron_timer_t* timer);
+
+bool chron_timer_cancel(chron_timer_t* timer);
+
 /**
  * @brief Set the chron_timer state flag
  *

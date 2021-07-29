@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <memory.h>
+#include <stdarg.h>
 
 /**
  * @brief Opaque helper. Set the itimerspec ms and ns
@@ -20,6 +21,30 @@ void __set_itimerspec(struct timespec* ts, unsigned long ms) {
 	unsigned long remaining_ms = ms % 1000;
 
 	ts->tv_nsec = remaining_ms * (1000000);
+}
+
+/**
+ * @brief Opaque helper. Checks if the timer occupies any
+ * of the provided states
+ *
+ * @param nargs
+ * @param ...
+ * @return true
+ * @return false
+ */
+bool __timer_has_state(chron_timer_t* timer, int nargs,...) {
+	va_list args;
+
+	va_start(args, nargs);
+
+	for (int i = 0; i < nargs; i++) {
+		chron_timer_state state = va_arg(args, chron_timer_state);
+		if (chron_timer_get_state(timer) == state) return true;
+	}
+
+	va_end(args);
+
+	return false;
 }
 
 /**
@@ -160,7 +185,12 @@ unsigned long chron_timer_get_ms_remaining(chron_timer_t* timer) {
  * @return bool true only if pause succeeded
  */
 bool chron_timer_pause(chron_timer_t* timer) {
-	if (chron_timer_get_state(timer) == TIMER_PAUSED) return false;
+	if (__timer_has_state(
+		timer,
+		2,
+		TIMER_PAUSED,
+		TIMER_DELETED
+	)) return false;
 
 	timer->time_remaining = chron_timer_get_ms_remaining(timer);
 
@@ -181,7 +211,12 @@ bool chron_timer_pause(chron_timer_t* timer) {
  * @return bool true only if resume succeeded
  */
 bool chron_timer_resume(chron_timer_t* timer) {
-	if (chron_timer_get_state(timer) == TIMER_RESUMED) return false;
+	if (__timer_has_state(
+		timer,
+		2,
+		TIMER_RESUMED,
+		TIMER_DELETED
+	)) return false;
 
 	__set_itimerspec(&timer->ts.it_value, timer->time_remaining);
 	__set_itimerspec(&timer->ts.it_interval, timer->exp_interval);
@@ -190,6 +225,64 @@ bool chron_timer_resume(chron_timer_t* timer) {
 	if (!chron_timer_toggle(timer)) return false;
 
 	chron_timer_set_state(timer, TIMER_RESUMED);
+
+	return true;
+}
+
+/**
+ * @brief Restart the given chron_timer
+ *
+ * @param timer
+ * @return bool
+ */
+bool chron_timer_restart(chron_timer_t* timer) {
+	if (__timer_has_state(
+		timer,
+		1,
+		TIMER_DELETED
+	)) return false;
+
+	if (!chron_timer_cancel(timer)) return false;
+
+	__set_itimerspec(&timer->ts.it_value, timer->exp_time);
+
+	if (!timer->is_exponential) {
+		__set_itimerspec(&timer->ts.it_interval, timer->exp_interval);
+	} else {
+		__set_itimerspec(&timer->ts.it_interval, 0);
+	}
+
+	timer->invocation_count = 0;
+	timer->time_remaining = 0;
+	timer->exponential_backoff_time = timer->exp_time;
+	if (!chron_timer_toggle(timer)) return false;
+	chron_timer_set_state(timer, TIMER_RUNNING);
+
+	return true;
+}
+
+/**
+ * @brief Cancel the timer
+ *
+ * @param timer
+ * @return bool
+ */
+bool chron_timer_cancel(chron_timer_t* timer) {
+	chron_timer_state state = chron_timer_get_state(timer);
+
+	if (__timer_has_state(timer, 2, TIMER_INIT, TIMER_DELETED)) {
+		return false;
+	}
+
+	__set_itimerspec(&timer->ts.it_value, 0);
+	__set_itimerspec(&timer->ts.it_interval, 0);
+
+	timer->time_remaining = 0;
+	timer->invocation_count = 0;
+
+	if (!chron_timer_toggle(timer)) return false;
+
+	chron_timer_set_state(timer, TIMER_CANCELLED);
 
 	return true;
 }
