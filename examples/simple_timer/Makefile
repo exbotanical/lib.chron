@@ -6,7 +6,7 @@ TARGET=demo
 all: $(TARGET)
 
 $(TARGET): $(OBJFILES)
-	$(CC) -I ../../src $(OBJFILES) -o $(INTERMEDIARY) -L../../ -lchron
+	$(CC) -I ../../include -I ../../deps $(OBJFILES) -o $(INTERMEDIARY) -L../../ -lchron
 
 clean:
 	rm $(TARGET)

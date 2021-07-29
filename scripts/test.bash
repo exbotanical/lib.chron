@@ -24,7 +24,7 @@ not_test_file () {
 run_test () {
 	local file_name="$1"
 
-	gcc -I ./src/ -c "$TESTING_DIR/$file_name" -o main.o
+	gcc -I ./include/ -c "$TESTING_DIR/$file_name" -o main.o
 	gcc -o main main.o -L./ -l $REPO_DIR
 
 	export LD_LIBRARY_PATH=$HOME/repositories/$REPO_DIR/src/:$LD_LIBRARY_PATH

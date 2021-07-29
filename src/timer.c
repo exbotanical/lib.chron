@@ -405,20 +405,35 @@ const char* getEnumStr(chron_timer_state state) {
 void chron_timer_print(chron_timer_t* timer) {
 	char* readable_state;
 
-	switch (__timer_getstate(timer))
-	{
-	case TIMER_INIT:
-		readable_state = 'TIMER_INIT';
-		break;
-
-	default:
-		break;
+	switch (__timer_getstate(timer)) {
+		case TIMER_INIT:
+			readable_state = "TIMER_INIT";
+			break;
+		case TIMER_RUNNING:
+			readable_state = "TIMER_RUNNING";
+			break;
+		case TIMER_CANCELLED:
+			readable_state = "TIMER_CANCELLED";
+			break;
+		case TIMER_DELETED:
+			readable_state = "TIMER_DELETED";
+			break;
+		case TIMER_PAUSED:
+			readable_state = "TIMER_PAUSED";
+			break;
+		case TIMER_RESUMED:
+			readable_state = "TIMER_RESUMED";
+			break;
+		// we should never get here, but why not
+		default:
+			readable_state = "unknown - this is an error; please notify the maintainer";
+			break;
 	}
 
 	printf(
-		"counter = %u | time remaining = %lu | state = %d\n",
+		"counter = %u | time remaining = %lu | state = %s\n",
 		timer->invocation_count,
 		chron_timer_get_ms_remaining(timer),
-		__timer_getstate(timer)
+		readable_state
 	);
 }
