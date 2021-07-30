@@ -8,6 +8,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <pthread.h>
+
+/* Timer Base */
+
+/**
+ * @brief Timer state
+ */
 typedef enum {
 	TIMER_INIT,
 	TIMER_RUNNING,
@@ -17,6 +24,9 @@ typedef enum {
 	TIMER_RESUMED
 } chron_timer_state;
 
+/**
+ * @brief Represents a compound timer
+ */
 typedef struct chron_timer {
 	/* A POSIX timer */
 	timer_t timer;
@@ -54,6 +64,107 @@ typedef struct chron_timer {
 	/* Current state of timer */
 	chron_timer_state timer_state;
 } chron_timer_t;
+
+/* Hierarchical Timer Wheel */
+
+typedef enum {
+	TW_CREATE,
+	TW_RESCHEDULED,
+	TW_DELETE,
+	TW_SCHEDULED,
+	TW_UNKNOWN,
+} chron_tw_opcode;
+
+/**
+ * @brief Generic timer wheel callback
+ */
+typedef void (*chron_tw_callback)(void* arg, int arg_size);
+
+/**
+ * @brief Represents a single slot on the ring buffer
+ */
+typedef struct ring_buffer_slot {
+	glthread_t linked_list;
+	pthread_mutex_t mutex;
+} chron_tw_slot;
+
+/**
+ * @brief Represents a single element in a slot on the ring buffer.
+ */
+typedef struct tw_slot_el {
+	chron_tw_opcode opcode;
+
+	/* interval after which the event needs to be invoked */
+	int interval;
+
+	int new_interval;
+
+	/* revolution number at which the element's event must be invoked */
+	int r;
+
+	/* numeric identifier of the slot to which this el belongs */
+	int slot_n;
+
+	/* the event callback */
+	chron_tw_callback callback;
+
+	/* the event callback argument */
+	void* callback_arg;
+
+	/* the event callback argument size */
+	int arg_size;
+
+	/* is the event recurring? i.e. if 1, the event must be triggered at ea interval */
+	int is_recurring;
+
+	/* el's linked list node delegate */
+	glthread_t linked_list_node;
+
+	glthread_t waitlist_node;
+
+	/* pointer to the head node address of the slot to which this el belongs */
+	chron_tw_slot* slot_head;
+
+	/* counter of how many times this el has been scheduled */
+	unsigned int n_scheduled;
+} chron_tw_slot_el_t;
+
+/**
+ * @brief Represents a Hierarchical Timer Wheel
+ */
+typedef struct timer_wheel {
+	/* current tick and also the slot number currently pointed to */
+	int current_tick;
+
+	/* tick interval e.g. 1ms, 1s, 1m... */
+	int tick_interval;
+
+	/* number of slots in the wheel */
+	int ring_size;
+
+	/* aka R; the number of full revolutions completed */
+	int n_revolutions;
+
+	/* the thread on which the wheel is invoked */
+	pthread_t thread;
+
+	/* slots holding linked lists */
+	chron_tw_slot slots[0];
+
+	chron_tw_slot waitlist;
+
+	/* total number of slots in the wheel */
+	unsigned int n_slots;
+} chron_timer_wheel_t;
+
+/* Methods */
+
+chron_timer_wheel_t* chron_timer_wheel_init(int size, int tick_interval);
+
+bool chron_timer_wheel_start(chron_timer_wheel_t* tw);
+
+int chron_timer_wheel_get_time_remaining(chron_timer_wheel_t* tw, chron_tw_slot_el_t* el);
+
 
 chron_timer_t* chron_timer_init(
 	void (*callback)(chron_timer_t* timer, void* arg),
