@@ -10,7 +10,7 @@ OBJFILES=$(wildcard src/*.c deps/*.c)
 all: unix
 
 unix:
-	$(CC) -I ./include -I ./deps $(CFLAGS) $(OBJFILES) $(LDFLAGS) $(UNIX_BIN) -lrt 
+	$(CC) -I ./include -I ./deps $(CFLAGS) $(OBJFILES) $(LDFLAGS) $(UNIX_BIN) -lrt -lpthread
 
 win:
 	$(CC) $(CFLAGS) $(OBJFILES) $(LDFLAGS) $(WIN_BIN)

@@ -6,7 +6,9 @@
 #include <signal.h>
 #include <time.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <memory.h>
 
 #include <pthread.h>
 
@@ -165,6 +167,27 @@ bool chron_timer_wheel_start(chron_timer_wheel_t* tw);
 
 int chron_timer_wheel_get_time_remaining(chron_timer_wheel_t* tw, chron_tw_slot_el_t* el);
 
+void chron_timer_wheel_reset(chron_timer_wheel_t* tw);
+
+void chron_timer_wheel_reschedule_ev(
+	chron_timer_wheel_t* tw,
+	chron_tw_slot_el_t* el,
+	int next_interval
+);
+
+void chron_timer_wheel_unregister_ev(
+	chron_timer_wheel_t* tw,
+	chron_tw_slot_el_t* el
+);
+
+chron_tw_slot_el_t* chron_timer_wheel_register_ev(
+	chron_timer_wheel_t* tw,
+	chron_tw_callback callback,
+	void* arg,
+	int arg_size,
+	int interval,
+	int recurring
+);
 
 chron_timer_t* chron_timer_init(
 	void (*callback)(chron_timer_t* timer, void* arg),

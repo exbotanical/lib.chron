@@ -1,9 +1,7 @@
 #include "libchron.h"
 
-#include <memory.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 /**
  * @brief Set the chron_timer state flag

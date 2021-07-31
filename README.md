@@ -21,7 +21,7 @@ When scheduling an event *k*, we assign an integer value *r* where *r* is the nu
 
 The Timer Wheel is further optimized in that the linked list must store events such that *r* is ascending; if on revolution 3 we iterate the linked list, invoking any events whose *r* value is 3 or less, we can stop iterating the moment we scan a list node whose *r* value is greater than 3.
 
-In this way, we never *search* the linked list and maintain a *constant time of 0(1)*.
+In this way, we never *search* the linked list; in traversing each slot on the wheel's internal ring buffer, we maintain a *time complexity of 0(1)*.
 
 ## Dynamic Linking
 
