@@ -74,7 +74,11 @@ switch(opcode){
 
 		CHRON_TW_SET_UNLOCK_SLOT(CHRON_TW_GET_WAITLIST(tw));
 		break;
+
+	default:
+		break;
 	}
+
 }
 
 /**
@@ -150,6 +154,9 @@ void __reschedule_slot(chron_timer_wheel_t* tw) {
 
 				tw->n_slots--;
 				break;
+
+			default:
+				break;
 		}
 	} ITERATE_GLTHREAD_END(CHRON_TW_GET_WAITLIST_HEAD(tw), current_node);
 
@@ -166,8 +173,7 @@ void* __timer_routine(void* arg) {
 	chron_timer_wheel_t* tw = (chron_timer_wheel_t*)arg;
 	chron_tw_slot_el_t* el = NULL;
 
-	int abs_slot_n = 0,
-					 i = 0;
+	int abs_slot_n = 0;
 
 	chron_tw_slot* slot = NULL;
 	glthread_t* current_node;

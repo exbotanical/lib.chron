@@ -1,10 +1,7 @@
 /**
- * @file gl_thread.c (lib.cartilage)
+ * @file gl_thread.c
  * @author Matthew Zito (goldmund@freenode)
- *
- * @brief Implements a GLUE Doubly Linked List - Ported from lib.cartilage
- * Tested in and ported from lib.cartilage (https://github.com/MatthewZito/lib.cartilage)
- *
+ * @brief Implements a GLUE Doubly Linked List
  * @version 0.1
  * @date 2021-07-11
  *
@@ -12,7 +9,7 @@
  *
  */
 
-#include "glthread.h"
+#include "libcartilage.h"
 
 #include <stdlib.h>
 
@@ -169,8 +166,8 @@ void glthread_priority_insert(
 
 	// single node glthread
 	if (head->next && !head->next->next) {
-		if (comparator(GET_DATA_AT_OFFSET(glthread, offset),
-			GET_DATA_AT_OFFSET(head->next, offset)) == -1) {
+		if (comparator(GET_DATA_FROM_OFFSET(glthread, offset),
+			GET_DATA_FROM_OFFSET(head->next, offset)) == -1) {
 			glthread_insert_after(head, glthread);
 		} else {
 			glthread_insert_after(head->next, glthread);
@@ -180,8 +177,8 @@ void glthread_priority_insert(
 	}
 
 	ITERATE_GLTHREAD_BEGIN(head, curr) {
-		if (comparator(GET_DATA_AT_OFFSET(glthread, offset),
-			GET_DATA_AT_OFFSET(curr, offset)) != -1) {
+		if (comparator(GET_DATA_FROM_OFFSET(glthread, offset),
+			GET_DATA_FROM_OFFSET(curr, offset)) != -1) {
 			prev = curr;
 			continue;
 		}

@@ -1,16 +1,16 @@
 CC=gcc
-CFLAGS=-g -pthread -Ideps -fPIC -Wall -Wextra -pedantic 
+CFLAGS=-g -fPIC -Wall -Wextra -pedantic -std=c17
 LDFLAGS=-shared -o
-BIN=libchron.so
+ 
+BIN=libcartilage.so
 
 OBJFILES=$(wildcard src/*.c)
-DEPS=$(wildcard deps/*/*.c)  
 
 TESTS = $(patsubst %.c, %, $(wildcard t/*.c))
 
-all:
-	$(CC) $(CFLAGS) $(DEPS) $(OBJFILES) $(LDFLAGS) $(BIN)
-
+all: 
+	$(CC) $(CFLAGS) $(OBJFILES) $(LDFLAGS) $(BIN)
+ 
 clean:
 	rm -f $(TARGET) $(BIN) $(WIN_BIN) main main.o 
 

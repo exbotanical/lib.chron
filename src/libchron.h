@@ -1,7 +1,7 @@
 #ifndef LIB_CHRON_H
 #define LIB_CHRON_H
 
-#include "glthread.h"
+#include "lib.cartilage/libcartilage.h"
 
 #include <signal.h>
 #include <time.h>

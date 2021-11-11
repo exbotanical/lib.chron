@@ -24,7 +24,7 @@ not_test_file () {
 run_test () {
 	local file_name="$1"
 
-	gcc -I ./include/ -c "$TESTING_DIR/$file_name" -o main.o
+	gcc -Isrc -Ideps -c "$TESTING_DIR/$file_name" -o main.o
 	gcc -o main main.o -L./ -l $REPO_DIR
 
 	export LD_LIBRARY_PATH=$HOME/repositories/$REPO_DIR/src/:$LD_LIBRARY_PATH
@@ -34,7 +34,7 @@ run_test () {
 }
 
 main () {
-	make unix
+	make
 
 	declare -a tests=($(ls $TESTING_DIR | filter not_test_file))
 

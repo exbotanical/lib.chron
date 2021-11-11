@@ -13,6 +13,19 @@ Schedulers, timers, and time-contingent eventing for the C programming language
 - consistent exception-handling
 - Hierarchical Timer Wheels
 
+##  Install
+
+Via [clib](https://github.com/clibs/clib/):
+
+```bash
+clib install MatthewZito/lib.chron
+```
+
+From Source:
+```bash
+git clone https://github.com/MatthewZito/lib.chron
+cd lib.chron && make
+
 ## Hierarchical Timer Wheel
 
 The Timer Wheel implementation this library offers is implemented as a ring buffer data structure with numbered slots. Each slot contains a pointer to a linked list of elements, each sub-slots for scheduled events.
