@@ -25,6 +25,7 @@ From Source:
 ```bash
 git clone https://github.com/MatthewZito/lib.chron
 cd lib.chron && make
+```
 
 ## Hierarchical Timer Wheel
 
